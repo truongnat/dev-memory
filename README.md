@@ -1,255 +1,653 @@
-# Personal KB + Skill Hub
+# 🧠 Personal KB + Skill Hub
 
-A personal developer platform: **graph-backed knowledge base**, **versioned AI skills**, and a **CLI** that connects your machine to a self-hosted API. Built for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [Cursor](https://cursor.com) workflows.
+<div align="center">
 
-| Layer | Stack | Role |
-|-------|--------|------|
-| API | NestJS 10 | REST, guards, validation, modules |
-| Graph | Neo4j 5.26 | Solutions, skills, tags, relationships |
-| Search | Meilisearch | Full-text index |
-| Cache | Redis | 5-minute TTL, invalidation on writes |
-| CLI | Bun + Commander | `skill` command |
-| Proxy | Caddy v2 | Auto-SSL, reverse proxy |
-| Infra | Docker Compose | Multi-service orchestration |
+**A graph-backed knowledge base and versioned AI skill platform for Claude Code and Cursor**
 
-**Production:** [dev.truongsoftware.com](https://dev.truongsoftware.com) · API on host port `3456`
+[![API Status](https://img.shields.io/website?label=API&url=https%3A%2F%2Fdev.truongsoftware.com%2Fhealth)](https://dev.truongsoftware.com/health)
+[![NestJS](https://img.shields.io/badge/NestJS-10-red?logo=nestjs)](https://nestjs.com)
+[![Neo4j](https://img.shields.io/badge/Neo4j-5.26-0EA5E9?logo=neo4j)](https://neo4j.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript)](https://www.typescriptlang.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docker.com)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
----
+[Website](https://dev.truongsoftware.com) • [API Docs](https://dev.truongsoftware.com/docs) • [Skill Hub](./skills/) • [Contributing](#contributing)
 
-## Features
-
-- **Knowledge base** — Push markdown solutions; search via Meilisearch; auto-link related solutions by shared tags in Neo4j
-- **Skill hub** — Publish, version, and install skill packs (`SKILL.md` + `references/`)
-- **Professional skill standard** — Six-layer architecture, `skill validate`, CI on pull requests
-- **CLI** — KB search/push, skill install/publish/compose, config management
-- **Self-host** — Docker Compose stack, VPS scripts, Caddy SSL
+</div>
 
 ---
 
-## Architecture
+## 📋 Table of Contents
 
-```
-  CLI (skill) ──HTTPS──▶ Caddy (:443)
-                              │
-                       NestJS API (:3456)
-                         ╱    │    ╲
-                   Neo4j  Meilisearch  Redis
-                  (graph)   (search)   (cache)
-```
-
-**Graph model (summary):** `Solution`, `Skill`, `SkillVersion`, `Tag`, `Project`, `Technology` — with `TAGGED_WITH`, `RELATED_TO`, `HAS_VERSION`, `COMPATIBLE_WITH`, and related edges.
-
----
-
-## Repository layout
-
-```
-apps/api/              NestJS API
-packages/cli/          skill CLI (Bun)
-skills/                Published skill sources (hub)
-templates/skill/       Skill authoring template + brief
-scripts/               VPS setup, deploy, backup, publish helpers
-SKILL_AUTHORING_RULES.md   Canonical skill structure spec
-```
+- [Overview](#-overview)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Quick Start](#-quick-start)
+- [CLI Usage](#-cli-usage)
+- [API Reference](#-api-reference)
+- [Deployment](#-deployment)
+- [Development](#-development)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#contributing)
 
 ---
 
-## Quick start (CLI)
+## 🎯 Overview
+
+**Personal KB + Skill Hub** is a self-hosted developer knowledge platform that combines:
+
+- **📚 Knowledge Base** — Store, search, and auto-link your development solutions
+- **🎓 Skill Hub** — Publish, version, and share AI skills for Claude Code and Cursor
+- **⚡ CLI Tool** — Command-line interface for KB and skill management
+- **🔗 Graph Database** — Neo4j-backed relationships for intelligent linking
+- **🔍 Full-Text Search** — Meilisearch for fast, relevant results
+- **🚀 Self-Hosted** — Docker Compose stack, VPS-ready, complete control
+
+Perfect for:
+- ✅ Storing solutions to bugs you've solved
+- ✅ Building a personal knowledge library
+- ✅ Publishing reusable AI skills
+- ✅ Integrating with Claude Code or Cursor for AI-assisted workflows
+
+---
+
+## ✨ Features
+
+### Knowledge Base
+- **Push solutions** — Save markdown documentation to your graph-backed KB
+- **Smart search** — Full-text search with semantic ranking via Meilisearch
+- **Auto-linking** — Solutions automatically linked by shared tags
+- **Solution versioning** — Immutable revision history with content hashing
+- **Tag suggestions** — AI-powered tag recommendations based on content analysis
+
+### Skill Hub
+- **Professional skills** — Define skills with 6-layer architecture (Metadata → Contract → Decision → Knowledge → Execution → Quality)
+- **Skill validation** — Enforce structure, frontmatter, section ordering, reference links
+- **Semantic versioning** — Version skills independently; install specific versions
+- **Skill composition** — Merge multiple skills into a single KB phase
+- **IDE Integration** — Compatible with Claude Code and Cursor via `.claude/skills/`
+
+### Developer Experience
+- **CLI tool** — `skill` command for KB, skills, and configuration management
+- **Auto-tag suggestions** — Confidence-scored suggestions as you push solutions
+- **Git hooks** — Pre-commit searches, post-merge reminders for solution discipline
+- **Shell completions** — Bash/Zsh auto-completion for commands and flags
+- **API documentation** — OpenAPI/Swagger endpoint at `/docs`
+
+### Infrastructure
+- **Docker Compose** — Multi-service orchestration (NestJS, Neo4j, Meilisearch, Redis, Caddy)
+- **Auto-SSL** — Caddy reverse proxy with Let's Encrypt
+- **Backup automation** — Daily incremental backups with 7-day retention
+- **VPS provisioning** — Scripts for Ubuntu 22.04+ hardening and setup
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Claude Code / Cursor                │
+│                   .claude/skills/                    │
+└────────────────────────┬────────────────────────────┘
+                         │
+            CLI (skill) ──┤ HTTPS
+                         │
+        ┌────────────────▼────────────────┐
+        │        Caddy (:443)             │
+        │      (Reverse Proxy)            │
+        │      (Auto-SSL)                 │
+        └────────────────┬────────────────┘
+                         │
+        ┌────────────────▼────────────────┐
+        │    NestJS API (:3456)           │
+        │  • Auth (API keys)              │
+        │  • Knowledge Base CRUD          │
+        │  • Skill management             │
+        │  • Search coordination          │
+        └───┬────────────┬────────────┬───┘
+            │            │            │
+      ┌─────▼──┐    ┌────▼───┐  ┌───▼─────┐
+      │ Neo4j  │    │ Meili  │  │  Redis  │
+      │ (5.26) │    │ search │  │ (cache) │
+      └────────┘    └────────┘  └─────────┘
+
+Graph Nodes: Solution, SolutionRevision, Skill, SkillVersion, Tag, Project, Technology
+Relationships: TAGGED_WITH, RELATED_TO, HAS_VERSION, COMPATIBLE_WITH, USES
+```
+
+**Data Flow:**
+1. User pushes solution via CLI → API validates & stores in Neo4j
+2. Meilisearch indexes document for full-text search
+3. Redis caches search results (5-min TTL)
+4. Graph auto-links solutions by shared tags (RELATED_TO edges)
+5. Solution revision captured for immutable audit trail
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) 1.0+ or Node.js 18+
-- Git
+- **Bun** 1.0+ or **Node.js** 18+
+- **Docker** & **Docker Compose** (for API)
+- **Git**
 
-### Install
+### 1. Install CLI
 
 ```bash
+# Clone repository
 git clone https://github.com/truongnat/personal-ai.git
-cd personal-ai/packages/cli
+cd personal-ai
+
+# Install dependencies
+cd packages/cli
 bun install
-bun run build          # optional: compile dist/skill
-# Dev mode (no global link):
-bun run src/index.ts -- --help
-```
 
-Global install (optional):
-
-```bash
+# Build (optional, for global install)
 bun build src/index.ts --outfile dist/skill --target node
-npm link
-skill --version
+npm link  # Make 'skill' globally available
 ```
 
-### Configure
-
+**Verify:**
 ```bash
-# One-shot (requires API_KEY)
-API_KEY=kb_live_your_key make setup-skill-cli
-
-# Or manually
-skill config set hub_url https://dev.truongsoftware.com
-skill config set api_key kb_live_your_key
-skill config set skills_dir ~/.claude/skills
-skill config list
+skill --version  # Should print version
+skill --help     # Show all commands
 ```
 
-Generate an API key (master password required):
+### 2. Generate API Key
+
+If you have access to an API instance, generate a key:
 
 ```bash
 curl -X POST https://dev.truongsoftware.com/auth/generate-key \
   -H "x-master-password: YOUR_MASTER_PASSWORD" \
   -H "Content-Type: application/json" \
-  -d '{"label":"my-machine","expiresIn":"365d"}'
+  -d '{
+    "label": "my-machine",
+    "expiresIn": "365d"
+  }'
+
+# Response:
+# {
+#   "id": "...",
+#   "key": "kb_live_...",  <- Save this securely
+#   "label": "my-machine",
+#   "created_at": "2026-05-18T..."
+# }
+```
+
+### 3. Configure CLI
+
+```bash
+skill config set hub_url https://dev.truongsoftware.com
+skill config set api_key kb_live_YOUR_KEY_HERE
+skill config set default_project my-project
+skill config list  # Verify
+
+# Config is stored at ~/.skill-cli/config.json
 ```
 
 ---
 
-## CLI reference
+## 📖 CLI Usage
 
-### Knowledge base
+### Knowledge Base Commands
 
+**Search**
 ```bash
-skill kb search "docker port conflict"
-skill kb push ./solution.md --tags "docker,compose" --project personal-ai
-skill kb list --tag docker
-skill kb get <solution-id>
+skill kb search "docker compose network"
+skill kb search "authentication" --limit 10
+
+# Output: Results ranked by relevance with related solutions
 ```
 
-### Skill hub
-
+**Push a Solution**
 ```bash
-skill list
-skill info vps-devops-pro
-skill install vps-devops-pro
-skill publish ./skills/my-skill --compatible "Claude Code,Cursor" --version 1.0.0 --tags "devops"
-skill update --all
-skill compose --name full-stack --use deploy-workflow --use docker-compose-pro --kb
+# Create solution file
+cat > my-solution.md << 'EOF'
+# Fixed Docker Port Conflict
+
+## Problem
+Docker Compose failed to start because port 5432 was already in use.
+
+## Solution
+Kill the existing process:
+\`\`\`bash
+lsof -i :5432
+kill -9 <PID>
+\`\`\`
+
+Then restart: `docker compose up`
+EOF
+
+# Push with auto-tag suggestions
+skill kb push my-solution.md --tags "docker,networking" --project my-project
+
+# Or skip suggestions
+skill kb push my-solution.md --tags "docker" --skip-suggestions
 ```
 
-### Skill authoring (local)
+**List & Get**
+```bash
+skill kb list                           # All solutions
+skill kb list --tag docker              # Filter by tag
+skill kb list --project my-project      # Filter by project
+skill kb get <solution-id>              # View full content
+skill kb get <solution-id>/history      # View revision history
+```
+
+**Update**
+```bash
+skill kb update <solution-id> \
+  --title "Updated Title" \
+  --content "./updated.md"
+```
+
+### Skill Commands
+
+**Install Skills**
+```bash
+skill list                                    # Browse available skills
+skill info nestjs-neo4j-pro                   # Details about a skill
+skill install nestjs-neo4j-pro                # Install to ~/.claude/skills
+skill install nestjs-neo4j-pro@1.2.0          # Install specific version
+```
+
+**Publish Skills**
+```bash
+skill publish ./skills/my-skill \
+  --compatible "Claude Code,Cursor" \
+  --version 1.0.0 \
+  --tags "devops,docker" \
+  --changelog "Initial release"
+```
+
+**Compose Skills** (Merge multiple into one)
+```bash
+skill compose \
+  --name "Full Stack Dev" \
+  --use kb-workflow \
+  --use nestjs-neo4j-pro \
+  --use docker-compose-pro \
+  --kb                           # Include KB search/push phases
+  --out ./composed-skill.md
+```
+
+### Configuration
 
 ```bash
-skill new my-domain-pro              # scaffold from templates/skill
-skill validate ./skills/my-domain-pro
-skill validate-all ./skills --fix    # all skills + repair literal \n corruption
-make validate-skills                 # same from repo root
-make publish-skills                  # validate + publish manifest (needs API_KEY)
+skill config get hub_url               # Current hub URL
+skill config set api_key kb_live_...   # Update API key
+skill config list                      # All settings
+skill config get                       # Show location of config file
 ```
 
 ---
 
-## Bundled skills
+## 🔌 API Reference
 
-| Skill | Purpose |
-|-------|---------|
-| `skill-authoring` | Create and validate skills (meta) |
-| `kb-workflow` | KB solution discipline |
-| `api-design-pro` | NestJS REST, DTOs, guards |
-| `nestjs-neo4j-pro` | Neo4j + NestJS integration |
-| `bun-cli-pro` | Bun CLI / Commander patterns |
-| `docker-compose-pro` | Compose orchestration |
-| `vps-devops-pro` | VPS, Caddy, UFW, backups |
-| `deploy-workflow` | Deploy/monitor this project's VPS |
+**Base URL:** `https://dev.truongsoftware.com`  
+**Docs:** `https://dev.truongsoftware.com/docs` (OpenAPI/Swagger)
 
-Authoring rules: [`SKILL_AUTHORING_RULES.md`](SKILL_AUTHORING_RULES.md) · Template: [`templates/skill/`](templates/skill/)
+### Authentication
+
+| Type | Header | Example |
+|------|--------|---------|
+| User | `x-api-key` | `kb_live_...` |
+| Admin | `x-master-password` | (for key generation only) |
+
+### Endpoints
+
+#### Health Check
+```bash
+GET /health
+
+# Response:
+{
+  "status": "ok",
+  "uptime": 3600.5,
+  "timestamp": "2026-05-18T10:00:00Z"
+}
+```
+
+#### Knowledge Base
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/kb/push` | Create new solution |
+| `GET` | `/kb/search?q=...` | Search KB (cached) |
+| `GET` | `/kb/list` | List solutions (paginated) |
+| `GET` | `/kb/:id` | Get solution details |
+| `GET` | `/kb/:id/history` | Solution revision history |
+| `PATCH` | `/kb/:id` | Update solution |
+| `DELETE` | `/kb/:id` | Delete solution |
+| `POST` | `/kb/suggest-tags` | Get tag suggestions |
+
+**Example: Push a Solution**
+```bash
+curl -X POST https://dev.truongsoftware.com/kb/push \
+  -H "x-api-key: kb_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Fixed Neo4j Connection Pool",
+    "content": "## Problem\n\n...",
+    "tags": ["neo4j", "performance"],
+    "project": "personal-ai",
+    "ticket_ref": "TICKET-123"
+  }'
+
+# Response:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "message": "Pushed successfully",
+  "related_found": 3
+}
+```
+
+**Example: Search**
+```bash
+curl "https://dev.truongsoftware.com/kb/search?q=docker+compose&limit=5" \
+  -H "x-api-key: kb_live_..."
+
+# Response:
+{
+  "results": [
+    {
+      "id": "...",
+      "title": "Fixed Docker Port Conflict",
+      "summary": "Killed existing process on port...",
+      "tags": ["docker", "networking"],
+      "score": 0.95,
+      "related": [...],
+      "created_at": "2026-05-17T..."
+    }
+  ],
+  "total": 12,
+  "cached": false
+}
+```
+
+#### Skills
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/skill/publish` | Publish new skill version |
+| `GET` | `/skill/list` | List all skills |
+| `GET` | `/skill/:name` | Get skill details |
+| `GET` | `/skill/install/:name` | Get skill files for install |
+| `POST` | `/skill/compose` | Merge multiple skills |
+
+#### Authentication (Admin)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/auth/generate-key` | Create API key |
+| `GET` | `/auth/keys` | List active keys |
+| `DELETE` | `/auth/revoke-key/:id` | Revoke a key |
+
+### Rate Limits
+
+| Endpoint | Limit |
+|----------|-------|
+| `/kb/search` | 2 requests/second |
+| `/*` (default) | 5 requests/second |
 
 ---
 
-## Development
+## 🚀 Deployment
 
-### Local API
+### Self-Host on VPS
+
+**Requirements:**
+- Ubuntu 22.04+ LTS
+- 2GB+ RAM (4GB recommended)
+- Docker & Docker Compose
+- DNS A record pointing to your server
+
+**Setup (5 minutes):**
 
 ```bash
-docker compose up -d neo4j meilisearch redis
-cd apps/api && bun install && bun run start:dev
+# 1. Clone to VPS
+ssh root@your-domain.com
+git clone https://github.com/truongnat/personal-ai.git /opt/personal-ai
+cd /opt/personal-ai
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your secrets:
+# - NEO4J_PASSWORD
+# - REDIS_PASSWORD
+# - CADDY_ADMIN_EMAIL
+# - etc.
+
+# 3. Run provisioning script
+bash scripts/setup-vps.sh
+# This will:
+# - Update system packages
+# - Install Docker/Compose
+# - Set up UFW firewall
+# - Create backups directory
+# - Start all services
+
+# 4. Verify
+curl https://your-domain.com/health
 ```
 
-### Makefile
+**Caddy Configuration** (auto-generated):
+```caddy
+your-domain.com {
+    reverse_proxy localhost:3456
+    encode gzip zstd
+    header / X-Frame-Options "DENY"
+    header / X-Content-Type-Options "nosniff"
+}
+```
+
+**Deploy Updates:**
+```bash
+# From repo root:
+make deploy
+
+# Or directly on VPS:
+bash /opt/personal-ai/scripts/deploy.sh
+```
+
+**Backups:**
+- Daily backups run at 2 AM UTC via cron
+- 7-day retention in `/opt/personal-ai/backups/`
+- Includes Neo4j data, Meilisearch index, solutions
+- Restore: `bash scripts/restore.sh /opt/personal-ai/backups/2026-05-17_backup.tar.gz`
+
+---
+
+## 🛠️ Development
+
+### Local Setup
+
+```bash
+# Start services
+make up
+
+# Start API in dev mode
+cd apps/api
+bun install
+bun run start:dev
+
+# In another terminal, test CLI
+cd ../../packages/cli
+bun run src/index.ts kb search "test"
+```
+
+### Makefile Commands
 
 | Command | Description |
 |---------|-------------|
 | `make up` | Start all Docker services |
 | `make down` | Stop containers |
 | `make logs` | Follow API logs |
-| `make build` | Build API image |
-| `make deploy` | Deploy to VPS via SSH |
-| `make validate-skills` | Validate all skills under `skills/` |
-| `make publish-skills` | Publish all skills in `publish-manifest.json` |
-| `make setup-skill-cli` | Configure CLI (`API_KEY` required) |
+| `make build` | Build API Docker image |
+| `make deploy` | Deploy to VPS (requires SSH config) |
+| `make validate-skills` | Validate all skills |
+| `make publish-skills` | Publish validated skills |
+| `make test` | Run unit tests |
 
-### CI
-
-Pull requests that touch `skills/**` run **skill validation** (structure, frontmatter, section order, reference links). See [`.github/workflows/skills.yml`](.github/workflows/skills.yml).
-
----
-
-## API overview
-
-| Auth | Header |
-|------|--------|
-| User | `x-api-key` |
-| Admin | `x-master-password` |
-
-| Area | Endpoints |
-|------|-----------|
-| Auth | `POST /auth/generate-key`, `GET /auth/keys`, `DELETE /auth/revoke-key/:id` |
-| KB | `POST /kb/push`, `GET /kb/search`, `GET /kb/list`, `GET/PATCH/DELETE /kb/:id` |
-| Skills | `POST /skill/publish`, `GET /skill/install/:name`, `GET /skill/list`, `GET /skill/:name`, `POST /skill/compose` |
-
-Rate limits: search 2 req/s; general 5 req/s (Throttler).
-
----
-
-## Self-hosting (VPS)
-
-**Requirements:** Ubuntu 22.04+, 2GB+ RAM, DNS A record to your server.
+### Testing
 
 ```bash
-git clone https://github.com/truongnat/personal-ai.git /opt/personal-ai
-cd /opt/personal-ai
-cp .env.example .env   # edit secrets
-bash scripts/setup-vps.sh
+# Unit tests (NestJS services)
+cd apps/api
+bun run test
+
+# Test coverage
+bun run test:cov
+
+# Test specific file
+bun run test kb.service
 ```
 
-Caddy example:
-
-```caddy
-your-domain.com {
-    reverse_proxy localhost:3456
-    encode gzip zstd
-}
-```
-
-Deploy updates:
+### Code Quality
 
 ```bash
-make deploy
-# or on VPS: bash /opt/personal-ai/scripts/deploy.sh
+# Type check
+npx tsc --noEmit
+
+# Linting (if configured)
+npm run lint
+
+# Skill validation
+make validate-skills
+skill validate ./skills/my-skill --fix
 ```
 
-Backups: daily cron via `scripts/backup.sh` (7-day retention under `/opt/personal-ai/backups/`).
+### Database Inspection
+
+```bash
+# Neo4j Browser (local)
+open http://localhost:7474/browser/
+
+# Meilisearch Admin (local)
+open http://localhost:7700/
+```
 
 ---
 
-## Solution format
+## 🔧 Troubleshooting
 
-```markdown
-# Title
+### API Connection Issues
 
-## Problem
-...
+**Problem:** `Error: connect ECONNREFUSED 127.0.0.1:3456`
 
-## Solution
-...
+**Solution:**
+```bash
+# Check if services are running
+docker ps | grep -E "neo4j|redis|meilisearch|api"
 
-## Tags
-tag1, tag2
+# If not, start them
+make up
+
+# Check API logs
+make logs
 ```
 
-Use `templates/solution.md` as a starter. Push with `skill kb push`.
+### Authentication Errors
+
+**Problem:** `Error: Invalid API key`
+
+**Solution:**
+```bash
+# Verify key format (should start with 'kb_live_')
+skill config get api_key
+
+# Regenerate if expired
+curl -X POST https://dev.truongsoftware.com/auth/generate-key \
+  -H "x-master-password: YOUR_MASTER_PASSWORD" \
+  -H "Content-Type: application/json" \
+  -d '{"label":"my-machine"}'
+
+# Update config
+skill config set api_key kb_live_NEW_KEY
+```
+
+### Search Not Working
+
+**Problem:** `Search returns no results`
+
+**Solution:**
+```bash
+# Check Meilisearch index status
+curl http://localhost:7700/stats \
+  -H "Authorization: Bearer $MEILI_MASTER_KEY"
+
+# Reindex all solutions
+curl -X POST http://localhost:7700/indexes/solutions/documents \
+  -H "Authorization: Bearer $MEILI_MASTER_KEY" \
+  -d '[{"id":"...","title":"..."}]'
+```
+
+### Neo4j Connection Pool Exhausted
+
+**Problem:** `Timeout waiting for connection from pool`
+
+**Solution:**
+```bash
+# Restart Neo4j
+docker compose restart neo4j
+
+# Or check logs
+docker logs personal-ai-neo4j-1
+
+# Increase connection pool in docker-compose.yml:
+# NEO4J_INITIAL_DBMS_DEFAULT_DATABASE_SETTING_dbms_max_connection_pool_size=100
+```
 
 ---
 
-## License
+## 📚 Resources
 
-Private project · [@truongnat](https://github.com/truongnat)
+| Topic | Link |
+|-------|------|
+| Skill Authoring Guide | [`SKILL_AUTHORING_RULES.md`](SKILL_AUTHORING_RULES.md) |
+| Project Guide (Claude Code) | [`CLAUDE.md`](CLAUDE.md) |
+| Cursor Rules | [`.cursor/rules/`](.cursor/rules/) |
+| API Docs (Live) | https://dev.truongsoftware.com/docs |
+| Neo4j Docs | https://neo4j.com/docs/ |
+| NestJS Docs | https://docs.nestjs.com/ |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Whether it's bug fixes, features, or documentation:
+
+1. **Fork** the repository
+2. **Create a branch** (`git checkout -b feature/amazing-feature`)
+3. **Make changes** and test thoroughly
+4. **Commit** with clear messages (`git commit -m "feat: add amazing feature"`)
+5. **Push** to your fork (`git push origin feature/amazing-feature`)
+6. **Open a PR** with a description
+
+### Guidelines
+
+- **Code style:** Follow NestJS/TypeScript conventions
+- **Tests:** Add tests for new features
+- **Commits:** Conventional commits format (`feat:`, `fix:`, `docs:`, etc.)
+- **Skills:** Validate with `make validate-skills` before submitting
+
+---
+
+## 📄 License
+
+MIT © 2026 [@truongnat](https://github.com/truongnat)
+
+**Built with:**
+- NestJS · Neo4j · Meilisearch · Redis · Docker · Bun · TypeScript
+
+---
+
+<div align="center">
+
+**[Back to top](#-personal-kb--skill-hub)**
+
+Made with ❤️ for developers who learn by building.
+
+</div>
