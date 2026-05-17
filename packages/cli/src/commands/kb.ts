@@ -62,7 +62,7 @@ export function registerKbCommands(program: Command) {
           content,
           tags: opts.tags ? opts.tags.split(',').map((t) => t.trim()) : [],
           ticket_ref: opts.ticket,
-          project: opts.project ?? config.default_project || undefined,
+          project: opts.project ?? (config.default_project || undefined),
         })
         spinner.succeed(chalk.green(`Pushed: ${title}`))
         console.log(chalk.dim(`  ID: ${data.id}`))
