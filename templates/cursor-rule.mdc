@@ -1,0 +1,31 @@
+---
+description: Brief description of what this rule enforces or enables.
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Rule Name
+
+## Purpose
+
+What this rule ensures and why it matters.
+
+## Rules
+
+1. **Rule one** — description and rationale
+2. **Rule two** — description and rationale
+3. **Rule three** — description and rationale
+
+## Examples
+
+### Good
+
+```typescript
+// Correct pattern
+```
+
+### Bad
+
+```typescript
+// Anti-pattern — why it fails
+```

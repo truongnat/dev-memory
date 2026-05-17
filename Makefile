@@ -2,7 +2,9 @@ VPS_HOST=62.146.238.102
 VPS_USER=root
 VPS_DIR=/opt/personal-ai
 
-.PHONY: up down logs dev build restart ps deploy setup-vps
+.PHONY: up down logs dev build restart ps deploy setup-vps validate-skills fix-skills-md publish-skills setup-skill-cli
+
+SKILL_CLI=cd packages/cli && bun run src/index.ts
 
 up:
 	docker compose up -d
@@ -36,3 +38,15 @@ setup-vps:
 
 deploy:
 	ssh $(VPS_USER)@$(VPS_HOST) "bash $(VPS_DIR)/scripts/deploy.sh"
+
+validate-skills:
+	$(SKILL_CLI) validate-all ../../skills --fix
+
+fix-skills-md:
+	python3 scripts/fix-skill-markdown.py
+
+publish-skills:
+	bash scripts/publish-all-skills.sh
+
+setup-skill-cli:
+	bash scripts/setup-skill-cli.sh

@@ -1,0 +1,31 @@
+{
+  "default_compatible": ["Claude Code", "Cursor"],
+  "default_version": "1.1.0",
+  "default_changelog": "Six-layer format, validate-all CI, reference links",
+  "skills": {
+    "bun-cli-pro": {
+      "tags": ["bun", "cli", "commander", "ora"]
+    },
+    "deploy-workflow": {
+      "tags": ["deploy", "vps", "docker", "caddy"]
+    },
+    "docker-compose-pro": {
+      "tags": ["docker", "compose", "devops"]
+    },
+    "kb-workflow": {
+      "tags": ["kb", "knowledge-base", "neo4j"]
+    },
+    "nestjs-neo4j-pro": {
+      "tags": ["nestjs", "neo4j", "cypher", "graph"]
+    },
+    "skill-authoring": {
+      "tags": ["skill", "authoring", "cursor", "claude"]
+    },
+    "vps-devops-pro": {
+      "tags": ["vps", "caddy", "ufw", "devops"]
+    },
+    "api-design-pro": {
+      "tags": ["nestjs", "api", "rest", "dto", "guards"]
+    }
+  }
+}

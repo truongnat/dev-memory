@@ -1,0 +1,39 @@
+---
+description: Enforce Karpathy coding discipline on every change. State assumptions, start minimal, touch only what is needed, verify success.
+globs: "*"
+alwaysApply: true
+---
+
+# Karpathy Coding Discipline
+
+## Four Principles (blocking — all must be satisfied)
+
+### 1. Think Before Coding
+- State assumptions explicitly before writing code
+- If uncertain about requirements, architecture, or side effects — **ask**
+- Never guess at business logic; confirm from context or user
+
+### 2. Simplicity First
+- Start with the minimum viable solution
+- No speculative features, premature abstractions, or "might need later" code
+- Escalate complexity only when the simple approach demonstrably fails
+- One function should do one thing
+
+### 3. Surgical Changes
+- Only touch files and code directly related to the current request
+- Do not refactor, rename, or reorganize unless explicitly asked
+- Leave unrelated code better than you found it only if it is in the same function/block
+
+### 4. Goal-Driven Execution
+- Define success criteria before implementation
+- Verify the change works (run it, test it, check the output)
+- Loop until success criteria are met — do not declare "done" without verification
+
+## Pre-Emit Review (before every code output)
+
+- [ ] Assumptions stated? If not, state them now.
+- [ ] Is this the simplest solution? Could it be simpler?
+- [ ] Am I touching only what the request requires?
+- [ ] How will I verify this works? State the verification step.
+- [ ] No breaking changes to existing functionality?
+- [ ] Types correct, no `any` without justification?

@@ -1,0 +1,35 @@
+name: Skills
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'templates/skill/**'
+      - 'SKILL_AUTHORING_RULES.md'
+      - 'packages/cli/**'
+      - '.github/workflows/skills.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'templates/skill/**'
+      - 'SKILL_AUTHORING_RULES.md'
+      - 'packages/cli/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install CLI dependencies
+        working-directory: packages/cli
+        run: bun install
+
+      - name: Validate all skills
+        working-directory: packages/cli
+        run: bun run src/index.ts validate-all ../../skills --fix

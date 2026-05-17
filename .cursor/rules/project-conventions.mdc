@@ -1,0 +1,84 @@
+---
+description: Project conventions for the Personal KB + Skill Hub monorepo. NestJS API patterns, Bun CLI patterns, Neo4j Cypher rules, Docker Compose conventions.
+globs: "**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# Project Conventions
+
+## NestJS API (`apps/api/`)
+
+### Module Structure
+- One module per domain: `auth/`, `kb/`, `skill/`, `neo4j/`, `search/`, `cache/`
+- Each module: `*.module.ts`, `*.service.ts`, `*.controller.ts`, `*.dto.ts`
+- Shared modules (`Neo4jModule`, `CacheModule`, `SearchModule`) are `@Global()`
+- Guards implement `CanActivate`; register global guard via `APP_GUARD`
+
+### Naming
+- Files: kebab-case (`api-key.guard.ts`, `kb.service.ts`)
+- Classes: PascalCase matching file (`ApiKeyGuard`, `KbService`)
+- DTOs: `VerbNounDto` pattern (`PushSolutionDto`, `PublishSkillDto`)
+
+### Guards & Auth
+- `MasterGuard`: validates `x-master-password` header for admin endpoints
+- `ApiKeyGuard`: validates `x-api-key` header via bcrypt comparison
+- Apply with `@UseGuards(GuardClass)` on controller or method
+
+### Validation
+- All DTOs use `class-validator` decorators (`@IsString()`, `@IsOptional()`)
+- Global `ValidationPipe` with `whitelist: true, transform: true`
+
+### Error Handling
+- Throw NestJS `HttpException` subclasses (`NotFoundException`, `UnauthorizedException`)
+- Never expose internal errors to client; log and rethrow generic
+
+## Neo4j / Cypher
+
+### Query Rules
+- ALWAYS use parameterized queries: `$variableName`, never string interpolation
+- MERGE for idempotent operations (creating nodes that may exist)
+- `ON CREATE SET` must come before `SET` after MERGE
+- Use `neo4j.int()` for all integer parameters (SKIP, LIMIT)
+- Always DETACH DELETE (removes relationships automatically)
+
+### Constraints
+- ALL constraints created in `Neo4jService.onModuleInit()` — never in other services
+- Pattern: `CREATE CONSTRAINT name IF NOT EXISTS FOR (n:Label) REQUIRE n.prop IS UNIQUE`
+
+### Session Management
+- Open session per query, close immediately after
+- Never hold sessions across async boundaries
+- Use `session.run()` directly, not transactions, unless multi-statement atomicity needed
+
+## Bun CLI (`packages/cli/`)
+
+### Command Structure
+- Commander program with subcommand groups: `kb` (search/push/list/get), skill verbs (install/publish/compose)
+- Options: `--flag value` pattern, use `.option()` with description
+- Action handlers: async, wrap in try/catch with `ora` spinner
+
+### Output
+- `ora` for async operations (start before, succeed/fail after)
+- `chalk` for colors: green=success, red=error, dim=secondary info
+- Tables for list output; truncate long content with ellipsis
+
+### Config
+- `conf` package stores at `~/.skill-cli/config.json`
+- Keys: `hub_url`, `api_key`, `default_project`, `skills_dir`
+- Never hardcode URLs or credentials
+
+## Docker Compose
+
+### Port Mapping
+- Document why non-standard host ports: `3456:3000` (avoid VPS conflicts)
+- Internal ports stay standard (containers talk on default ports)
+- Comment each port mapping
+
+### Volumes
+- Named volumes for persistence (data survives container recreation)
+- `:ro` suffix for read-only mounts (nginx.conf, certs)
+
+### Environment
+- `.env` file for secrets (gitignored)
+- `.env.example` committed with placeholder values
+- `env_file: .env` in service definition

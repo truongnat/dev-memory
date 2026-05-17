@@ -31,6 +31,24 @@ config
     console.log(val || chalk.dim('(not set)'))
   })
 
+config
+  .command('list')
+  .description('Show all config values (api_key masked)')
+  .action(() => {
+    const keys: (keyof import('./config').CliConfig)[] = [
+      'hub_url',
+      'api_key',
+      'skills_dir',
+      'default_project',
+    ]
+    for (const key of keys) {
+      const val = getConfigValue(key)
+      const display =
+        key === 'api_key' && val ? `${val.slice(0, 12)}…` : val || chalk.dim('(not set)')
+      console.log(`${chalk.bold(key)}: ${display}`)
+    }
+  })
+
 // KB commands (registered as nested `kb search`, `kb push`, etc.)
 registerKbCommands(program)
 
